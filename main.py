@@ -70,3 +70,26 @@ def connectTargetsToExtraNode(adjMatrix, targets, maxIn, maxOut):
     for target_data_centre in targets:
         adjMatrix[target_data_centre].append(min(maxIn[target_data_centre], maxOut[target_data_centre]))
         adjMatrix[-1].append(0)
+
+def dfs(data_centre, curr_flow, adjMatrix, visited):
+    # Mark the current data centre as visited
+    visited[data_centre] = True
+
+    # If the current data centre is the super target node, return the current flow
+    # This means we have found a path from the origin to the super target node
+    if data_centre == len(adjMatrix) - 1:
+        return curr_flow
+
+    # Iterate over all data centres connected to the current data centre
+    for neighbour, capacity in enumerate(adjMatrix[data_centre]):
+        if capacity > 0 and not visited[neighbour]:
+            # Perform a depth-first search from the neighbouring data centre to find a path to the super target node
+            flow = dfs(neighbour, min(curr_flow, capacity), adjMatrix, visited)
+
+            # If this path leads to the super target node, update the flow along this path
+            if flow > 0:
+                adjMatrix[data_centre][neighbour] -= flow
+                adjMatrix[neighbour][data_centre] += flow
+                return flow
+
+    return 0
