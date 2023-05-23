@@ -31,7 +31,6 @@ def maxThroughput(connections, maxIn, maxOut, origin, targets):
 
     # Add a super target node (an extra node) in the network that connects all target data centres
     # This extra node will help us compute the maximum flow to all target data centres in a single run of Ford-Fulkerson
-    #  TODO:  Create
     connectTargetsToExtraNode(adjMatrix, targets, maxIn, maxOut)
 
     # Determine the maximum possible data flow from the origin to all target data centres using the Ford-Fulkerson algorithm
@@ -50,3 +49,24 @@ def initializeAdjMatrix(num_data_centres, connections, maxIn, maxOut):
         adjMatrix[from_data_centre][to_data_centre] = min(throughput, maxOut[from_data_centre], maxIn[to_data_centre])
 
     return adjMatrix
+
+'''
+The backup request that you receive has the following format: it specifies the integer ID origin
+∈ {0, 1, . . . , |D| − 1} of the data centre where the data to be backed up is located and a list
+targets of data centres that are deemed appropriate locations for the backup data to be stored.
+targets is a list of integers such that each integer i in it is such that i ∈ {0, 1, . . . , |D| − 1}
+and indicates that backing up data to server i is fine. Regarding those inputs:
+• You can assume that origin is not contained in the list targets.
+• You cannot assume that the list of integers targets is given to you in any specific order,
+but you can assume that it contains no duplicated integers.
+• The data to be backed up can be arbitrarily split among the data centres specified in
+targets and each part of the data only needs to be stored in one of those data centres.
+'''
+def connectTargetsToExtraNode(adjMatrix, targets, maxIn, maxOut):
+    # Append a new row to the matrix to represent the super target node
+    adjMatrix.append([0] * len(adjMatrix[0]))
+
+    # Connect each target data centre to the super target node
+    for target_data_centre in targets:
+        adjMatrix[target_data_centre].append(min(maxIn[target_data_centre], maxOut[target_data_centre]))
+        adjMatrix[-1].append(0)
