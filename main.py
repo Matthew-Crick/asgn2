@@ -93,3 +93,25 @@ def dfs(data_centre, curr_flow, adjMatrix, visited):
                 return flow
 
     return 0
+
+def calculateMaxDataFlow(adjMatrix, origin):
+    # Initialize a variable to keep track of the total data that can be sent from the origin to all target data centres
+    max_data_flow = 0
+
+    while True:
+        # Initialize a list to keep track of visited data centres
+        visited = [False] * len(adjMatrix)
+
+        # Perform a depth-first search to find a path from the origin to the super target node
+        flow = dfs(origin, float('inf'), adjMatrix, visited)
+
+        # If no path was found, break the loop
+        # This means we have found all paths from the origin to the super target node
+        if flow == 0:
+            break
+
+        # If a path was found, add its flow to the total flow
+        # This flow represents the maximum data that can be sent from the origin to all target data centres via this path
+        max_data_flow += flow
+
+    return max_data_flow
