@@ -58,8 +58,8 @@ class CatsTrie:
         # The end of a sentence is reached once we have iterated through its characters; at this point we mark this in memory by incrementing our sentence_end_number count which allows us to track the number of sentences that finish at this particular node 
         node.sentence_end_number += 1
 
-        # Keep the smallest lexicographical ordered sentence we have seen so far at each node in the Trie
-        # As we will eventually endeavour to return the most occurring sentence that matches our prompt. Should sentences have the same number of occurrences; we'd want to return the sentence with the smallest lexicographical order
+        # At every node in the CatsTrie data structure we will keep the sentence that has the smallest lexicographical order seen; for the case of sentences that have equal maximum occurrences we will return the sentence with the smallest lexicographical order
+        # Set the current sentence to the current node if there has yet to be a sentence assigned to the node; otherwise if the current sentence is less than (lexicographically) than that of the current sentence at the same node; update to reflect the smaller of the two
         if node.sentence is None:
             node.sentence = sentence
         else:
