@@ -33,7 +33,8 @@ class CatsTrie:
             self.add_sentence(sent)
 
     def add_sentence(self, sentence):
-        ''' A Method to add a sentence to our CatsTrie structure
+        ''' At a high abstraction level this method adds a sentence to our CatsTrie structure.
+            As it adds; every node in the CatsTrie data structure we will keep the sentence that has the smallest lexicographical order seen
             :INPUT:
                 sentence:  a subsentence of the input list 'sentences' that is to be added to our structure
         '''
@@ -58,10 +59,36 @@ class CatsTrie:
         # The end of a sentence is reached once we have iterated through its characters; at this point we mark this in memory by incrementing our sentence_end_number count which allows us to track the number of sentences that finish at this particular node 
         node.sentence_end_number += 1
 
-        # At every node in the CatsTrie data structure we will keep the sentence that has the smallest lexicographical order seen; for the case of sentences that have equal maximum occurrences we will return the sentence with the smallest lexicographical order
-        # Set the current sentence to the current node if there has yet to be a sentence assigned to the node; otherwise if the current sentence is less than (lexicographically) than that of the current sentence at the same node; update to reflect the smaller of the two
+        # At every node in the CatsTrie data structure we will keep the sentence that has the smallest lexicographical order seen
+        # Set the current sentence to the current node if there has yet to be a sentence assigned to the node; otherwise if the current sentence is less than (lexicographically) than that of the sentence at the same node; update to reflect the smaller of the two
         if node.sentence is None:
             node.sentence = sentence
         else:
             if sentence < node.sentence:
                 node.sentence = sentence
+
+        # Lets propagate the occurence of the current sentence up our CatsTrie; to keep track of the most occurring sentence at each node.
+        # Our temporary variable will be used to traverse the CatsTrie structure from the root to the corresponding nodes based on the characters of the current sentence.
+        temp = self.root
+
+        # So to get to every node; again we must iterate through every character in every sentence 
+        for character in sentence:
+
+            # And calculate its index 
+            index = ord(character) - ord('a')
+
+            # Then point to the next node in the path of the current sentence
+            temp = temp.child[index]
+
+            # Here at every node along the path, check if the occurrence of the current sentence (node.sentence_end_number) is greater than that of the known highest sentence occurrence known thus far (temp.maximum_occurrence_number). 
+            # If it is; update the maximum_sentence and maximum_occurrence_number at this node; Similarly do this for when the current sentence is of equal occurrence but a smaller lexicographical order than that of the current maximum_sentence.
+            if temp.maximum_occurrence_number < node.sentence_end_number or (temp.maximum_occurrence_number == node.sentence_end_number and temp.maximum_sentence > node.sentence):
+                temp.maximum_occurrence_number = node.sentence_end_number
+                temp.maximum_sentence = node.sentence
+
+        # Once propagating through the temporary Trie, we perform a similar check at the root node of our self CatsTrie
+        # Again if the current sentence's occurrence number is higher than that of the maximum_occurrence_number known to be recorded at the root, 
+        # or if they have the same frequency but the current sentence has a smaller lexicographical order; update the root's maximum_occurrence_number and maximum_sentence to reflect that of the current sentence
+        if self.root.maximum_occurrence_number < node.sentence_end_number or (self.root.maximum_occurrence_number == node.sentence_end_number and self.root.maximum_sentence > node.sentence):
+            self.root.maximum_occurrence_number = node.sentence_end_number
+            self.root.maximum_sentence = node.sentence
