@@ -1,120 +1,154 @@
-'''
-Your company has D data centres represented by 0, 1, . . . , |D| − 1. And you have a list
-connections of the direct communication channels between the data centres. connections is
-a list of tuples (a, b, t) where:
-• a ∈ {0, 1, . . . , |D|−1} is the ID of the data centre from which the communication channel
-departs.
-• b ∈ {0, 1, . . . , |D| − 1} is the ID of the data centre to which the communication channel
-arrives.
-• t is a positive integer representing the maximum throughput of that channel.
-Regarding connections:
-• You cannot assume that the communication channels are bidirectional.
-• You can assume that for each pair of data centers there will be at most one direct communication channel in each direction between them.
-• You can assume that for every data centre {0, 1, . . . , |D| − 1} there is at least one communication channel departing or arriving at that data centre.
-• You cannot assume that the list of tuples connections is given to you in any specific
-order.
-• The number of communication channels |C| might be significantly less than |D|
-2
-, therefore
-you should not assume that |C| = Θ(|D|
-2
-).
-'''
-
 def maxThroughput(connections, maxIn, maxOut, origin, targets):
-    # Determine the number of data centres
-    num_data_centres = len(maxIn)
+    ''' A Driver method to Calculate and return the maximum possible data throughput from the data centre origin to the data centres specified in targets.
+    :INPUT:
+        connections: a list of tuple elements (a, b, t) where:
+                • a ∈ {0, 1, . . . , |D|- 1} is the ID of the data centre from which the communication channel departs.
+                • b ∈ {0, 1, . . . , |D| - 1} is the ID of the data centre to which the communication channel arrives.
+                • t is a positive integer representing the maximum throughput of that channel.
+        maxIn:  a list of integers in which maxIn[i] specifies the maximum amount of incoming data that data centre i can process per second.
+        maxOut: a list of integers in which maxOut[i] specifies the maximum amount of outgoing data that data centre i can process per second.
+        origin: an integer ID origin ∈ {0, 1, . . . , |D| − 1} of the data centre where the data to be backed up is located; start source.
+        targets: a list of targets of data centres that are deemed appropriate locations for the backup data to be stored; 
+                 a list of integers such that each integer i in it is such that i ∈ {0, 1, . . . , |D| − 1} and indicates that backing up data to server i is fine.
+    :OUTPUT: maximum_flow; an integer reflecting the maximum possible data throughput from the data centre origin to the data centres specified in targets.
+    :TIME_COMPLEXITY: O(|D| · |C|^2) with |D| data centres and |C| communication channels.
+    :SPACE_COMPLEXITY: O(1)
+    '''
 
-    # Initialize adjacency matrix representing data flow between data centres
-    # Each cell in the matrix represents maximum possible data that can be sent from one data centre to another
-    adjMatrix = initializeAdjMatrix(num_data_centres, connections, maxIn, maxOut)
+    # Store the number of data centres into its own reusable variable
+    # Represents the number of data centres in the network
+    number_of_data_centres = len(maxIn)
 
-    # Add a super target node (an extra node) in the network that connects all target data centres
-    # This extra node will help us compute the maximum flow to all target data centres in a single run of Ford-Fulkerson
-    connectTargetsToExtraNode(adjMatrix, targets, maxIn, maxOut)
+    # Call upon our helper method to initialise an adjacency matrix structure such that every cell in the matrix presents its own maximum possible flow that can be sent from and through that data centre cell
+    # This data structure will help us represent the network structure with respect to the maximum flow capacitiy property between every data centre
+    adjacency_matrix = initialise_adjacency_matrix(number_of_data_centres, connections, maxIn, maxOut)
 
-    # Determine the maximum possible data flow from the origin to all target data centres using the Ford-Fulkerson algorithm
-    #  TODO:  Create
-    max_data_throughput = calculateMaxDataFlow(adjMatrix, origin)
+    # We can use the Ford-Fulkerson algorithm to compute the maximum amount of flow through our network to all target data centres
+    # To allow us to do so; let us create an additional node to connect to all target data centres 
+    link_targets_to_additional(adjacency_matrix, targets, maxIn, maxOut)
 
-    return max_data_throughput
+    # Obtain the maximum possible flow; We must adhere to the property of not exceeding the maximum possible flow from the origin to all target data centres
+    maximum_flow = calculate_maximum_flow(adjacency_matrix, origin)
+
+    # Return that maximum flow
+    return maximum_flow
 
 
-def initializeAdjMatrix(num_data_centres, connections, maxIn, maxOut):
-    # Create an empty matrix of zeros
-    adjMatrix = [[0] * num_data_centres for _ in range(num_data_centres)]
+def initialise_adjacency_matrix(number_of_data_centres, connections, maxIn, maxOut):
+    ''' A helper method to intialise the creation of an adjacency matrix data structure.
+    :INPUT:
+        number_of_data_centres: an integer reflecting the number of data centres.
+        connections: a list of tuple elements (a, b, t) where:
+                • a ∈ {0, 1, . . . , |D|- 1} is the ID of the data centre from which the communication channel departs.
+                • b ∈ {0, 1, . . . , |D| - 1} is the ID of the data centre to which the communication channel arrives.
+                • t is a positive integer representing the maximum throughput of that channel.
+        maxIn:  a list of integers in which maxIn[i] specifies the maximum amount of incoming data that data centre i can process per second.
+        maxOut: a list of integers in which maxOut[i] specifies the maximum amount of outgoing data that data centre i can process per second.
+    :OUTPUT: adjacency_matrix; an adjacency matrix structure cell-made-and-populated relative to the number of data centres and connections.
+    :TIME_COMPLEXITY: O(|C|), where |C| is the number of connections. 
+    :SPACE_COMPLEXITY: O(|D|^2) where |D| is the number of data centres.
+    '''
+    # Initialise our adjacency matrix as an empty list 
+    # The cells of our adjacenecy matrix structure will reflect the maximum flow possible based on connections and capacities
+    adjacency_matrix = []
 
-    # Populate the matrix with the maximum possible data flow for each connection
-    for from_data_centre, to_data_centre, throughput in connections:
-        adjMatrix[from_data_centre][to_data_centre] = min(throughput, maxOut[from_data_centre], maxIn[to_data_centre])
+    # Now create the cells of the adjacency matrix relative to our number of data centres
+    for _ in range(number_of_data_centres):
+        row = [0] * number_of_data_centres
+        adjacency_matrix.append(row)
 
-    return adjMatrix
+    # Now populate the adjacency matrix with the maximum possible flow for every connection from the given input of connections
+    for from_centre, to_centre, flow in connections:
+        adjacency_matrix[from_centre][to_centre] = min(flow, maxOut[from_centre], maxIn[to_centre])
 
-'''
-The backup request that you receive has the following format: it specifies the integer ID origin
-∈ {0, 1, . . . , |D| − 1} of the data centre where the data to be backed up is located and a list
-targets of data centres that are deemed appropriate locations for the backup data to be stored.
-targets is a list of integers such that each integer i in it is such that i ∈ {0, 1, . . . , |D| − 1}
-and indicates that backing up data to server i is fine. Regarding those inputs:
-• You can assume that origin is not contained in the list targets.
-• You cannot assume that the list of integers targets is given to you in any specific order,
-but you can assume that it contains no duplicated integers.
-• The data to be backed up can be arbitrarily split among the data centres specified in
-targets and each part of the data only needs to be stored in one of those data centres.
-'''
-def connectTargetsToExtraNode(adjMatrix, targets, maxIn, maxOut):
-    # Append a new row to the matrix to represent the super target node
-    adjMatrix.append([0] * len(adjMatrix[0]))
+    # Return the now cell-made-and-populated adjacency matrix data structure
+    return adjacency_matrix
+
+def link_targets_to_additional(adjacency_matrix, targets, maxIn, maxOut):
+    ''' A method to connect all target nodes to that of the created additional node.
+    :INPUT:
+        adjacency_matrix; an adjacency matrix structure cell-made-and-populated relative to the number of data centres and connections; contains the current nodes to link the additional created node to.
+        targets: a list of targets of data centres that are deemed appropriate locations for the backup data to be stored; 
+                 a list of integers such that each integer i in it is such that i ∈ {0, 1, . . . , |D| − 1} and indicates that backing up data to server i is fine. 
+        maxIn:  a list of integers in which maxIn[i] specifies the maximum amount of incoming data that data centre i can process per second.
+        maxOut: a list of integers in which maxOut[i] specifies the maximum amount of outgoing data that data centre i can process per second.
+    :OUTPUT: No Direct Return Output
+    :TIME_COMPLEXITY: O(|T|), where |T| is the number of target data centres.
+    :SPACE_COMPLEXITY: O(|D|), where |D| is the number of data centres. 
+    '''
+    # Let us append a new row to our adjacency matrix to represent that we have infact created a new additional node for the current nodes in the matrix to link to
+    # The newly added node will connect to all target data centres thus allowing for the calculation of maximum potential flow to those targets
+    adjacency_matrix.append([0] * len(adjacency_matrix[0]))
 
     # Connect each target data centre to the super target node
-    for target_data_centre in targets:
-        adjMatrix[target_data_centre].append(min(maxIn[target_data_centre], maxOut[target_data_centre]))
-        adjMatrix[-1].append(0)
+    # For every data centre target within our given input of targets; connect each to that of the new additional node we just made 
+    for centre_target in targets:
+        adjacency_matrix[centre_target].append(min(maxIn[centre_target], maxOut[centre_target]))
+        adjacency_matrix[-1].append(0)
 
-def dfs(data_centre, curr_flow, adjMatrix, visited):
-    # Mark the current data centre as visited
+def dfs(data_centre, curr_flow, adjacency_matrix, visited):
+    ''' A depth-first search path method.
+    :INPUT:
+        data_centre: The current data centre we are visiting in the DFS traversal
+        curr_flow: The current known flow of the network
+        adjacency_matrix: an adjacency matrix structure cell-made-and-populated relative to the number of data centres and connections
+        visited: A of visited data centres; represented by boolean cells
+    :OUTPUT: No Direct Return Output
+    :TIME_COMPLEXITY: O(|D| · |C|^2)
+    :SPACE_COMPLEXITY: O(|D|), where |D| is the number of data centres.
+    '''
+    # The current data centre has now been visited 
+    # The visited array allows the tracking of centres during the DFS traversal
     visited[data_centre] = True
 
-    # If the current data centre is the super target node, return the current flow
-    # This means we have found a path from the origin to the super target node
-    if data_centre == len(adjMatrix) - 1:
+    # If the current data centre we are visiting is that of the additional node; return the current flow as we have found the path from the origin to the additional target node 
+    if data_centre == len(adjacency_matrix) - 1:
         return curr_flow
 
-    # Iterate over all data centres connected to the current data centre
-    for neighbour, capacity in enumerate(adjMatrix[data_centre]):
+    # Otherwise iterate over every possible data centre that is linked to that of the current centre
+    for neighbour, capacity in enumerate(adjacency_matrix[data_centre]):
         if capacity > 0 and not visited[neighbour]:
-            # Perform a depth-first search from the neighbouring data centre to find a path to the super target node
-            flow = dfs(neighbour, min(curr_flow, capacity), adjMatrix, visited)
 
-            # If this path leads to the super target node, update the flow along this path
+            # Execute a DFS from the neighbouring centre to find a path to the additional target node
+            flow = dfs(neighbour, min(curr_flow, capacity), adjacency_matrix, visited)
+
+            # Should the path lead to the additional target node, update the flow for this path
             if flow > 0:
-                adjMatrix[data_centre][neighbour] -= flow
-                adjMatrix[neighbour][data_centre] += flow
+                adjacency_matrix[data_centre][neighbour] -= flow
+                adjacency_matrix[neighbour][data_centre] += flow
                 return flow
-
     return 0
 
-def calculateMaxDataFlow(adjMatrix, origin):
-    # Initialize a variable to keep track of the total data that can be sent from the origin to all target data centres
-    max_data_flow = 0
+def calculate_maximum_flow(adjacency_matrix, origin):
+    ''' A Driver-helper method to help calculate the maximum flow through the network.
+    :INPUT:
+        adjacency_matrix: adjacency_matrix; an adjacency matrix structure cell-made-and-populated relative to the number of data centres and connections.
+        origin: an integer ID origin ∈ {0, 1, . . . , |D| − 1} of the data centre where the data to be backed up is located; start source.
+    :OUTPUT: maximum_flow; an integer reflecting the maximum possible data throughput from the data centre origin to the data centres specified in targets.
+    :TIME_COMPLEXITY: O(|D| · |C|^2)
+    :SPACE_COMPLEXITY: O(1)
+    '''
+    # Initialise a recording variable that tracks the ongoing total flow of data that can be sent from the origin to all target data centres in the network.
+    maximum_flow = 0
 
     while True:
-        # Initialize a list to keep track of visited data centres
-        visited = [False] * len(adjMatrix)
 
-        # Perform a depth-first search to find a path from the origin to the super target node
-        flow = dfs(origin, float('inf'), adjMatrix, visited)
+        # Initialise a list of False boolean cells to represent data centres that we have visited
+        # Tracks the visited data centres during maximum flow calculation
+        visited = [False] * len(adjacency_matrix)
 
-        # If no path was found, break the loop
-        # This means we have found all paths from the origin to the super target node
+        # Create a flow variable that equates to the value returned by performing a depth-first search in endeavour to find a path from the origin to the additional node
+        flow = dfs(origin, float('inf'), adjacency_matrix, visited)
+
+        # Should this flow equate to 0; then no path was found; break our while loop as we have found all paths from the origin to that of the additional node
         if flow == 0:
             break
 
-        # If a path was found, add its flow to the total flow
-        # This flow represents the maximum data that can be sent from the origin to all target data centres via this path
-        max_data_flow += flow
+        # Otherwise if a path was discovered; increment its flow to the total ongoing flow of the network; this flow represents the maximum data flow that can be sent from the origin to that of all target data centres through this path within the network
+        maximum_flow += flow
 
-    return max_data_flow
+    # Return the maximum flow
+    return maximum_flow
 
 
 # Example
