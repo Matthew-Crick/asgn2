@@ -5,8 +5,11 @@ class Node:
         ''' 
         Initialises our instance variables for every made Node
         Every child node is a potential pathway that leads to another subsequent character stored in a particular sentence, this is how we will endeavour to autocomplete the functionality of our CatsTrie data structure.
+        :INPUT: No Direct Input
+        :OUTPUT: No Direct Return Output
+        :TIME_COMPLEXITY: O(1)
+        :SPACE_COMPLEXITY: O(1)
         '''
-
         self.child = 26 * [None]  # We know node can have at most 26 children; where each child represents a potential character from the finite alphabet consisting of 'a' to 'z'.
         self.child = 26 * [None]  # We know node can have at most 26 children, where each child represents a potential character from the finite alphabet consisting of 'a' to 'z'. 
         self.sentence = None  # To store a potential sentence that could end at some node; helps our autocomplete functionality as it the variable will store the sentence leading to that node. Initialised to None to handle cases where the node does not mark a sentence end.
@@ -25,6 +28,9 @@ class CatsTrie:
                     The longest sentence would have M characters, as mapped from the cat vocabulary. is a positive integer.
                     A cat word can occur more than once in a single sentence. For example, the string baacbb represents a valid sentence.
                     Assume that there is only a maximum of 26 unique cat words in total, represented as lower case characters from a to z.
+            :OUTPUT: No Direct Return Output
+            :TIME_COMPLEXITY: O(NM) time complexity where N is the number of sentence in sentences & M is the number of characters in the longest sentence.
+            :SPACE_COMPLEXITY: O(NM) space complexity where N is the number of sentence in sentences & M is the number of characters in the longest sentence.
         '''
         self.root = Node()  # The CatsTrie root
 
@@ -37,6 +43,9 @@ class CatsTrie:
             As it adds; every node in the CatsTrie data structure we will keep the sentence that has the smallest lexicographical order seen
             :INPUT:
                 sentence:  a subsentence of the input list 'sentences' that is to be added to our structure
+            :OUTPUT: No Direct Return Output
+            :TIME_COMPLEXITY: O(NM) time complexity where N is the number of sentence in sentences & M is the number of characters in the longest sentence.
+            :SPACE_COMPLEXITY: O(NM) space complexity where N is the number of sentence in sentences & M is the number of characters in the longest sentence.
         '''
         # Beginning from our root node
         node = self.root  
@@ -92,3 +101,30 @@ class CatsTrie:
         if self.root.maximum_occurrence_number < node.sentence_end_number or (self.root.maximum_occurrence_number == node.sentence_end_number and self.root.maximum_sentence > node.sentence):
             self.root.maximum_occurrence_number = node.sentence_end_number
             self.root.maximum_sentence = node.sentence
+
+    def autoComplete(self, prompt):
+        ''' Driver method to autocomplete a given prompt based on the Trie.
+            :INPUT:
+                prompt:  is a string with characters in the set of [a...z]. This string represents the incomplete sentence that is to be completed by the trie.
+            :OUTPUT: node.maximum_sentence; A string reflecting that of the sentence that has the maximum occurrence that starts with the input prompt
+            :TIME_COMPLEXITY: O(X+Y) time complexity where X is the length of the prompt & Y is the length of the most frequent sentence in sentences that begins with the prompt, O(X) where such sentence do not exist
+            :SPACE_COMPLEXITY: O(NM) space complexity where N is the number of sentence in sentences & M is the number of characters in the longest sentence.
+        '''
+        # Beginning from the root node 
+        node = self.root
+        
+        # Traverse through the Trie with regards to every character within the given prompt
+        for char in prompt:
+
+            # Get the index thats related to the current character in iteration
+            index = ord(char) - ord('a')
+
+            # If there is no child node for this character; return None as this is the case for where the prompt is not within the CatsTrie data structure
+            if node.child[index] is None:
+                return None
+            
+            # Point to the next child node 
+            node = node.child[index]
+
+        # Return the sentence that has the maximum occurrence that starts with the input prompt
+        return node.maximum_sentence
